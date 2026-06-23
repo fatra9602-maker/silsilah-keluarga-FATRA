@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silsilah Keluarga Besar</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Silsilah Keluarga","short_name":"Silsilah","start_url":".","display":"standalone","background_color":"%2310b981","theme_color":"%23059669","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>","sizes":"512x512","type":"image/svg+xml"}]}'>
+<meta name="theme-color" content="#059669">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Silsilah">
+<meta name="mobile-web-app-capable" content="yes">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; }
+  .tree-node { cursor: pointer; transition: all .2s; }
+  .tree-node:hover { filter: brightness(1.1); transform: translateY(-2px); }
+  .modal-bg { backdrop-filter: blur(4px); }
+  .fade-in { animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px);} to {opacity:1; transform:none;} }
+  .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+  .install-hint { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+</style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-white to-amber-50 min-h-screen">
+
+<!-- ============ LOCK SCREEN ============ -->
+<div id="lockScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-emerald-700 to-emerald-900 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full fade-in">
+    <div class="text-center mb-6">
+      <div class="text-6xl mb-2">🌳</div>
+      <h1 class="text-2xl font-bold text-emerald-800">Silsilah Keluarga Besar</h1>
+      <p class="text-sm text-gray-500 mt-1">Aman • Terenkripsi • Bisa Dibagikan</p>
+    </div>
+    <div id="lockTabs" class="flex gap-2 mb-4">
+      <button onclick="setLockMode('open')" id="tabOpen" class="flex-1 py-2 rounded-lg bg-emerald-600 text-white font-medium">Buka File</button>
+      <button onclick="setLockMode('new')" id="tabNew" class="flex-1 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Buat Baru</button>
+      <button onclick="setLockMode('text')" id="tabText" class="flex-1 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">📱 Via Teks</button>
+    </div>
+    <div id="openSection">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Pilih file silsilah (.fam)</label>
+      <input type="file" id="fileInput" accept=".fam,.json" class="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-emerald-100 file:text-emerald-700 file:font-medium hover:file:bg-emerald-200 mb-3">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+      <input type="password" id="openPass" placeholder="Masukkan password keluarga" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-4">
+      <button onclick="openFile()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition">🔓 Buka Silsilah</button>
+    </div>
+    <div id="newSection" class="hidden">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Nama Keluarga</label>
+      <input type="text" id="familyName" placeholder="cth: Keluarga Besar Soeharto" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 mb-3">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Password (untuk enkripsi)</label>
+      <input type="password" id="newPass" placeholder="Minimal 6 karakter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2">
+      <input type="password" id="newPass2" placeholder="Ulangi password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 mb-4">
+      <button onclick="createNew()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition">✨ Buat Silsilah Baru</button>
+    </div>
+    <div id="textSection" class="hidden">
+      <p class="text-sm text-gray-600 mb-3">📱 Paste data silsilah yang diterima dari WhatsApp di bawah ini:</p>
+      <textarea id="importText" placeholder="Paste data SILSILAH:xxxxx di sini..." class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-emerald-500 mb-3"></textarea>
+      <input type="password" id="textPass" placeholder="Password untuk membuka" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 mb-3">
+      <button onclick="importFromText()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition">🔓 Buka dari Teks</button>
+    </div>
+    <div id="lockMsg" class="mt-3 text-sm text-center"></div>
+    <div id="installHint" class="hidden mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 install-hint">
+      💡 <b>Tip:</b> Klik menu browser (⋮ atau 🧭) → <b>"Install app"</b> atau <b>"Tambahkan ke layar utama"</b> agar bisa dibuka seperti aplikasi HP.
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="mainApp" class="hidden">
+  <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🌳</span>
+        <div>
+          <h1 id="familyTitle" class="font-bold text-emerald-800 text-lg leading-tight">Silsilah Keluarga</h1>
+          <p class="text-xs text-gray-500">🔒 Terenkripsi • <span id="memberCount">0</span> anggota</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <input type="text" id="searchBox" placeholder="🔍 Cari..." class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 w-32 sm:w-48">
+        <button onclick="addMember()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">➕ Tambah</button>
+        <button onclick="saveFile()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">💾 File</button>
+        <button onclick="shareViaText()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">📤 Share</button>
+        <button onclick="lockApp()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">🔒</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 pt-4">
+    <div class="flex gap-1 border-b border-gray-200">
+      <button onclick="switchView('list')" id="viewList" class="px-4 py-2 font-medium text-emerald-700 border-b-2 border-emerald-600">📋 Daftar</button>
+      <button onclick="switchView('tree')" id="viewTree" class="px-4 py-2 font-medium text-gray-500 hover:text-gray-700">🌳 Pohon</button>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 py-4">
+    <div id="listView"></div>
+    <div id="treeView" class="hidden overflow-auto scroll-thin bg-white rounded-xl shadow-sm border border-gray-200 p-4" style="min-height:500px;"></div>
+  </main>
+</div>
+
+<!-- ============ MEMBER MODAL ============ -->
+<div id="memberModal" class="hidden fixed inset-0 z-40 modal-bg bg-black/50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto scroll-thin fade-in">
+    <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+      <h2 id="modalTitle" class="text-xl font-bold text-emerald-800">Tambah Anggota</h2>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    </div>
+    <form id="memberForm" class="p-6 space-y-4">
+      <input type="hidden" id="mId">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap *</label>
+        <input type="text" id="mName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+          <select id="mGender" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <option value="M">Laki-laki</option>
+            <option value="F">Perempuan</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Generasi</label>
+          <input type="number" id="mGen" min="1" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+          <input type="date" id="mBirth" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Wafat</label>
+          <input type="date" id="mDeath" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ayah</label>
+          <select id="mFather" class="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="">— tidak diketahui —</option></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ibu</label>
+          <select id="mMother" class="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="">— tidak diketahui —</option></select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Pasangan</label>
+        <select id="mSpouse" class="w-full px-3 py-2 border border-gray-300 rounded-lg"><option value="">— belum/tidak ada —</option></select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Foto</label>
+        <input type="file" id="mPhoto" accept="image/*" class="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
+        <img id="mPhotoPreview" class="mt-2 hidden w-24 h-24 object-cover rounded-lg border">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+        <textarea id="mNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"></textarea>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg">💾 Simpan</button>
+        <button type="button" id="deleteBtn" onclick="deleteMember()" class="hidden bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg">🗑️</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ DETAIL MODAL ============ -->
+<div id="detailModal" class="hidden fixed inset-0 z-40 modal-bg bg-black/50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto scroll-thin fade-in">
+    <div id="detailContent" class="p-6"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   STATE & CRYPTO
+========================================================= */
+let STATE = { familyName:'', members:[], password:null };
+let currentView = 'list';
+
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+async function deriveKey(password, salt) {
+  const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:200000, hash:'SHA-256' },
+    baseKey,
+    { name:'AES-GCM', length:256 },
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+async function encryptData(obj, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, enc.encode(JSON.stringify(obj)));
+  return {
+    v:1,
+    salt: btoa(String.fromCharCode(...salt)),
+    iv: btoa(String.fromCharCode(...iv)),
+    ct: btoa(String.fromCharCode(...new Uint8Array(ct)))
+  };
+}
+
+async function decryptData(payload, password) {
+  const salt = Uint8Array.from(atob(payload.salt), c=>c.charCodeAt(0));
+  const iv = Uint8Array.from(atob(payload.iv), c=>c.charCodeAt(0));
+  const ct = Uint8Array.from(atob(payload.ct), c=>c.charCodeAt(0));
+  const key = await deriveKey(password, salt);
+  const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, ct);
+  return JSON.parse(dec.decode(pt));
+}
+
+/* =========================================================
+   LOCK / OPEN / CREATE
+========================================================= */
+function setLockMode(mode){
+  document.getElementById('openSection').classList.toggle('hidden', mode!=='open');
+  document.getElementById('newSection').classList.toggle('hidden', mode!=='new');
+  document.getElementById('textSection').classList.toggle('hidden', mode!=='text');
+  const active = 'flex-1 py-2 rounded-lg font-medium bg-emerald-600 text-white';
+  const inactive = 'flex-1 py-2 rounded-lg font-medium bg-gray-200 text-gray-700';
+  document.getElementById('tabOpen').className = mode==='open'?active:inactive;
+  document.getElementById('tabNew').className = mode==='new'?active:inactive;
+  document.getElementById('tabText').className = mode==='text'?active:inactive;
+}
+
+function showLockMsg(msg, ok=false){
+  const el = document.getElementById('lockMsg');
+  el.textContent = msg;
+  el.className = 'mt-3 text-sm text-center ' + (ok?'text-emerald-600':'text-red-600');
+}
+
+async function openFile(){
+  const file = document.getElementById('fileInput').files[0];
+  const pass = document.getElementById('openPass').value;
+  if(!file) return showLockMsg('Pilih file dulu');
+  if(!pass) return showLockMsg('Masukkan password');
+  try{
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    const data = await decryptData(payload, pass);
+    STATE = { ...data, password: pass };
+    enterApp();
+  }catch(e){
+    showLockMsg('Password salah atau file rusak');
+  }
+}
+
+async function createNew(){
+  const name = document.getElementById('familyName').value.trim();
+  const p1 = document.getElementById('newPass').value;
+  const p2 = document.getElementById('newPass2').value;
+  if(!name) return showLockMsg('Isi nama keluarga');
+  if(p1.length<6) return showLockMsg('Password minimal 6 karakter');
+  if(p1!==p2) return showLockMsg('Password tidak cocok');
+  STATE = { familyName:name, members:[], password:p1 };
+  STATE.members.push({
+    id: uid(), name:'Leluhur Pertama', gender:'M', generation:1,
+    birth:'', death:'', fatherId:'', motherId:'', spouseId:'', photo:'', notes:'Tambahkan data leluhur keluarga di sini.'
+  });
+  enterApp();
+}
+
+async function importFromText(){
+  const text = document.getElementById('importText').value.trim();
+  const pass = document.getElementById('textPass').value;
+  if(!text.startsWith('SILSILAH:')) return showLockMsg('Format tidak valid. Harus dimulai dengan "SILSILAH:"');
+  if(!pass) return showLockMsg('Masukkan password');
+  try{
+    const json = decodeURIComponent(escape(atob(text.slice(9))));
+    const payload = JSON.parse(json);
+    const data = await decryptData(payload, pass);
+    STATE = { ...data, password: pass };
+    enterApp();
+  }catch(e){
+    showLockMsg('Password salah atau data rusak');
+  }
+}
+
+function enterApp(){
+  document.getElementById('lockScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('familyTitle').textContent = STATE.familyName;
+  render();
+}
+
+function lockApp(){
+  STATE.password = null;
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('lockScreen').classList.remove('hidden');
+  ['openPass','newPass','newPass2','familyName','importText','textPass'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value='';
+  });
+  document.getElementById('fileInput').value='';
+  showLockMsg('');
+}
+
+/* =========================================================
+   SAVE / EXPORT / SHARE
+========================================================= */
+async function saveFile(){
+  const pass = prompt('Password untuk menyimpan (enkripsi):', '');
+  if(pass===null) return;
+  if(pass.length<6){ alert('Password minimal 6 karakter'); return; }
+  const payload = await encryptData({ familyName:STATE.familyName, members:STATE.members }, pass);
+  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = STATE.familyName.replace(/\s+/g,'_') + '.fam';
+  a.click();
+  alert('✅ File tersimpan: ' + a.download + '\n\nBagikan file ini + password ke anggota keluarga.');
+}
+
+async function shareViaText(){
+  const pass = prompt('Password untuk mengenkripsi data yang dibagikan:', '');
+  if(!pass) return;
+  if(pass.length<6){ alert('Password minimal 6 karakter'); return; }
+  try{
+    const payload = await encryptData({ familyName:STATE.familyName, members:STATE.members }, pass);
+    const text = 'SILSILAH:'+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    const shareMsg = '🌳 Data silsilah ' + STATE.familyName + '\n\n' + text + '\n\n[Password akan saya berikan terpisah]';
+    
+    if(navigator.share){
+      try{
+        await navigator.share({ title:'Silsilah '+STATE.familyName, text: shareMsg });
+        return;
+      }catch(e){ /* user cancel */ }
+    }
+    showShareModal(text);
+  }catch(e){
+    alert('Gagal: '+e.message);
+  }
+}
+
+function showShareModal(text){
+  const modal = document.createElement('div');
+  modal.id = 'shareModal';
+  modal.className = 'fixed inset-0 z-50 modal-bg bg-black/50 flex items-center justify-center p-4';
+  const safeText = text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 fade-in">
+      <h3 class="text-lg font-bold text-emerald-800 mb-2">📤 Bagikan via Teks</h3>
+      <p class="text-sm text-gray-600 mb-3">✅ Data berhasil di-encrypt. Copy teks di bawah, paste ke WhatsApp. <b>Kirim password secara terpisah!</b></p>
+      <textarea readonly onclick="this.select()" class="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono bg-gray-50">${safeText}</textarea>
+      <div class="flex gap-2 mt-3">
+        <button onclick="copyShareText()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg">📋 Copy</button>
+        <button onclick="document.getElementById('shareModal').remove()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2.5 rounded-lg">Tutup</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  window._shareText = text;
+}
+
+function copyShareText(){
+  navigator.clipboard.writeText(window._shareText).then(()=>{
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✅ Tersalin!';
+    setTimeout(()=>btn.textContent=orig, 2000);
+  }).catch(()=>alert('Gagal copy. Pilih manual teks di atas.'));
+}
+
+/* =========================================================
+   MEMBER CRUD
+========================================================= */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+
+function addMember(){
+  document.getElementById('modalTitle').textContent='Tambah Anggota';
+  document.getElementById('memberForm').reset();
+  document.getElementById('mId').value='';
+  document.getElementById('mGen').value = maxGen()+1;
+  document.getElementById('deleteBtn').classList.add('hidden');
+  document.getElementById('mPhotoPreview').classList.add('hidden');
+  fillParentSelects();
+  document.getElementById('memberModal').classList.remove('hidden');
+}
+
+function editMember(id){
+  const m = STATE.members.find(x=>x.id===id);
+  if(!m) return;
+  document.getElementById('modalTitle').textContent='Edit Anggota';
+  document.getElementById('mId').value=m.id;
+  document.getElementById('mName').value=m.name;
+  document.getElementById('mGender').value=m.gender;
+  document.getElementById('mGen').value=m.generation||1;
+  document.getElementById('mBirth').value=m.birth||'';
+  document.getElementById('mDeath').value=m.death||'';
+  document.getElementById('mNotes').value=m.notes||'';
+  fillParentSelects(m.id);
+  document.getElementById('mFather').value=m.fatherId||'';
+  document.getElementById('mMother').value=m.motherId||'';
+  document.getElementById('mSpouse').value=m.spouseId||'';
+  const prev = document.getElementById('mPhotoPreview');
+  if(m.photo){ prev.src=m.photo; prev.classList.remove('hidden'); } else prev.classList.add('hidden');
+  document.getElementById('deleteBtn').classList.remove('hidden');
+  document.getElementById('memberModal').classList.remove('hidden');
+}
+
+function fillParentSelects(excludeId){
+  const fathers = STATE.members.filter(m=>m.gender==='M' && m.id!==excludeId);
+  const mothers = STATE.members.filter(m=>m.gender==='F' && m.id!==excludeId);
+  const spouses = STATE.members.filter(m=>m.id!==excludeId);
+  const opt = (list, emptyLabel) => '<option value="">— '+emptyLabel+' —</option>' +
+    list.sort((a,b)=>(a.generation||1)-(b.generation||1)||a.name.localeCompare(b.name))
+        .map(m=>`<option value="${m.id}">${'•'.repeat((m.generation||1)-1)} ${m.name}</option>`).join('');
+  document.getElementById('mFather').innerHTML = opt(fathers,'tidak diketahui');
+  document.getElementById('mMother').innerHTML = opt(mothers,'tidak diketahui');
+  document.getElementById('mSpouse').innerHTML = opt(spouses,'belum/tidak ada');
+}
+
+document.getElementById('memberForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const id = document.getElementById('mId').value || uid();
+  const existing = STATE.members.find(m=>m.id===id);
+  let photo = existing?.photo || '';
+  const fileInput = document.getElementById('mPhoto');
+  if(fileInput.files[0]){
+    photo = await fileToBase64(fileInput.files[0]);
+  }
+  const data = {
+    id,
+    name: document.getElementById('mName').value.trim(),
+    gender: document.getElementById('mGender').value,
+    generation: parseInt(document.getElementById('mGen').value)||1,
+    birth: document.getElementById('mBirth').value,
+    death: document.getElementById('mDeath').value,
+    fatherId: document.getElementById('mFather').value,
+    motherId: document.getElementById('mMother').value,
+    spouseId: document.getElementById('mSpouse').value,
+    photo,
+    notes: document.getElementById('mNotes').value
+  };
+  if(data.spouseId){
+    const sp = STATE.members.find(m=>m.id===data.spouseId);
+    if(sp) sp.spouseId = id;
+  }
+  if(existing){ Object.assign(existing, data); }
+  else { STATE.members.push(data); }
+  closeModal();
+  render();
+});
+
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function deleteMember(){
+  const id = document.getElementById('mId').value;
+  if(!id) return;
+  const m = STATE.members.find(x=>x.id===id);
+  const children = STATE.members.filter(x=>x.fatherId===id||x.motherId===id);
+  if(children.length){
+    if(!confirm(`⚠️ ${m.name} memiliki ${children.length} anak. Anak akan menjadi yatim/piatu. Lanjutkan?`)) return;
+    children.forEach(c=>{ if(c.fatherId===id) c.fatherId=''; if(c.motherId===id) c.motherId=''; });
+  }
+  if(m.spouseId){
+    const sp = STATE.members.find(x=>x.id===m.spouseId);
+    if(sp) sp.spouseId='';
+  }
+  STATE.members = STATE.members.filter(x=>x.id!==id);
+  closeModal();
+  render();
+}
+
+function closeModal(){ document.getElementById('memberModal').classList.add('hidden'); }
+function maxGen(){ return STATE.members.reduce((a,m)=>Math.max(a,m.generation||1),0); }
+
+/* =========================================================
+   RENDER
+========================================================= */
+function render(){
+  document.getElementById('memberCount').textContent = STATE.members.length;
+  if(currentView==='list') renderList();
+  else renderTree();
+}
+
+function switchView(v){
+  currentView=v;
+  document.getElementById('viewList').className = 'px-4 py-2 font-medium '+(v==='list'?'text-emerald-700 border-b-2 border-emerald-600':'text-gray-500 hover:text-gray-700');
+  document.getElementById('viewTree').className = 'px-4 py-2 font-medium '+(v==='tree'?'text-emerald-700 border-b-2 border-emerald-600':'text-gray-500 hover:text-gray-700');
+  document.getElementById('listView').classList.toggle('hidden', v!=='list');
+  document.getElementById('treeView').classList.toggle('hidden', v!=='tree');
+  render();
+}
+
+function renderList(){
+  const q = (document.getElementById('searchBox').value||'').toLowerCase();
+  const list = STATE.members
+    .filter(m=>m.name.toLowerCase().includes(q))
+    .sort((a,b)=>(a.generation||1)-(b.generation||1)||a.name.localeCompare(b.name));
+  if(!list.length){
+    document.getElementById('listView').innerHTML = `<div class="text-center py-16 text-gray-400">
+      <div class="text-6xl mb-3">👪</div>
+      <p>${STATE.members.length?'Tidak ada hasil':'Belum ada anggota. Klik "Tambah" untuk memulai.'}</p></div>`;
+    return;
+  }
+  const byGen = {};
+  list.forEach(m=>{ const g=m.generation||1; (byGen[g]=byGen[g]||[]).push(m); });
+  let html='';
+  Object.keys(byGen).sort((a,b)=>a-b).forEach(g=>{
+    html += `<h3 class="mt-4 mb-2 font-semibold text-emerald-700">Generasi ${g}</h3><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">`;
+    byGen[g].forEach(m=>{
+      const father = STATE.members.find(x=>x.id===m.fatherId);
+      const mother = STATE.members.find(x=>x.id===m.motherId);
+      const spouse = STATE.members.find(x=>x.id===m.spouseId);
+      const age = calcAge(m.birth, m.death);
+      html += `<div onclick="showDetail('${m.id}')" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md cursor-pointer transition">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl overflow-hidden ${m.gender==='M'?'bg-blue-100':'bg-pink-100'}">
+            ${m.photo?`<img src="${m.photo}" class="w-12 h-12 rounded-full object-cover">`:m.gender==='M'?'👨':'👩'}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-gray-800 truncate">${escapeHtml(m.name)}</div>
+            <div class="text-xs text-gray-500">${age}${m.death?' †':''}</div>
+          </div>
+          <button onclick="event.stopPropagation();editMember('${m.id}')" class="text-gray-400 hover:text-emerald-600">✏️</button>
+        </div>
+        <div class="mt-2 text-xs text-gray-600 space-y-0.5">
+          ${father?`<div>👨 Ayah: ${escapeHtml(father.name)}</div>`:''}
+          ${mother?`<div>👩 Ibu: ${escapeHtml(mother.name)}</div>`:''}
+          ${spouse?`<div>💑 Pasangan: ${escapeHtml(spouse.name)}</div>`:''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('listView').innerHTML = html;
+}
+
+function calcAge(birth, death){
+  if(!birth) return '—';
+  const b = new Date(birth);
+  const d = death?new Date(death):new Date();
+  let y = d.getFullYear()-b.getFullYear();
+  const m = d.getMonth()-b.getMonth();
+  if(m<0 || (m===0 && d.getDate()<b.getDate())) y--;
+  return y+' tahun';
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function showDetail(id){
+  const m = STATE.members.find(x=>x.id===id);
+  if(!m) return;
+  const father = STATE.members.find(x=>x.id===m.fatherId);
+  const mother = STATE.members.find(x=>x.id===m.motherId);
+  const spouse = STATE.members.find(x=>x.id===m.spouseId);
+  const children = STATE.members.filter(x=>x.fatherId===id||x.motherId===id);
+  const siblings = STATE.members.filter(x=>x.id!==id && (
+    (m.fatherId && x.fatherId===m.fatherId) || (m.motherId && x.motherId===m.motherId)
+  ));
+  const age = calcAge(m.birth, m.death);
+  document.getElementById('detailContent').innerHTML = `
+    <div class="text-center mb-4">
+      <div class="w-24 h-24 mx-auto rounded-full flex items-center justify-center text-5xl overflow-hidden ${m.gender==='M'?'bg-blue-100':'bg-pink-100'} mb-3">
+        ${m.photo?`<img src="${m.photo}" class="w-24 h-24 rounded-full object-cover">`:m.gender==='M'?'👨':'👩'}
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800">${escapeHtml(m.name)}</h2>
+      <p class="text-gray-500">Generasi ${m.generation} • ${age}${m.death?' (telah wafat)':''}</p>
+    </div>
+    <div class="space-y-2 text-sm">
+      ${m.birth?`<div class="flex justify-between py-2 border-b"><span class="text-gray-500">🎂 Lahir</span><span>${m.birth}</span></div>`:''}
+      ${m.death?`<div class="flex justify-between py-2 border-b"><span class="text-gray-500">✝️ Wafat</span><span>${m.death}</span></div>`:''}
+      ${father?`<div class="flex justify-between py-2 border-b"><span class="text-gray-500">👨 Ayah</span><span class="cursor-pointer text-emerald-600" onclick="showDetail('${father.id}')">${escapeHtml(father.name)}</span></div>`:''}
+      ${mother?`<div class="flex justify-between py-2 border-b"><span class="text-gray-500">👩 Ibu</span><span class="cursor-pointer text-emerald-600" onclick="showDetail('${mother.id}')">${escapeHtml(mother.name)}</span></div>`:''}
+      ${spouse?`<div class="flex justify-between py-2 border-b"><span class="text-gray-500">💑 Pasangan</span><span class="cursor-pointer text-emerald-600" onclick="showDetail('${spouse.id}')">${escapeHtml(spouse.name)}</span></div>`:''}
+      ${children.length?`<div class="py-2 border-b"><div class="text-gray-500 mb-1">👶 Anak (${children.length})</div><div class="flex flex-wrap gap-1">${children.map(c=>`<span onclick="showDetail('${c.id}')" class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded cursor-pointer text-xs">${escapeHtml(c.name)}</span>`).join('')}</div></div>`:''}
+      ${siblings.length?`<div class="py-2 border-b"><div class="text-gray-500 mb-1">👫 Saudara (${siblings.length})</div><div class="flex flex-wrap gap-1">${siblings.map(c=>`<span onclick="showDetail('${c.id}')" class="px-2 py-1 bg-amber-100 text-amber-700 rounded cursor-pointer text-xs">${escapeHtml(c.name)}</span>`).join('')}</div></div>`:''}
+      ${m.notes?`<div class="py-2"><div class="text-gray-500 mb-1">📝 Catatan</div><div class="text-gray-700 whitespace-pre-wrap">${escapeHtml(m.notes)}</div></div>`:''}
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="closeDetail();editMember('${m.id}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium">✏️ Edit</button>
+      <button onclick="closeDetail()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">Tutup</button>
+    </div>`;
+  document.getElementById('detailModal').classList.remove('hidden');
+}
+function closeDetail(){ document.getElementById('detailModal').classList.add('hidden'); }
+
+/* =========================================================
+   TREE VIEW
+========================================================= */
+function renderTree(){
+  const container = document.getElementById('treeView');
+  if(!STATE.members.length){
+    container.innerHTML = `<div class="text-center py-16 text-gray-400"><div class="text-6xl mb-3">🌱</div><p>Tambahkan anggota untuk melihat pohon keluarga</p></div>`;
+    return;
+  }
+  const q = (document.getElementById('searchBox').value||'').toLowerCase();
+  const byGen = {};
+  STATE.members.forEach(m=>{
+    const g = m.generation||1;
+    (byGen[g]=byGen[g]||[]).push(m);
+  });
+  const gens = Object.keys(byGen).map(Number).sort((a,b)=>a-b);
+  const NODE_W=150, NODE_H=70, GAP_X=30, GAP_Y=100, PAD=40;
+  const positions = {};
+  let maxRowWidth = 0;
+  gens.forEach(g=>{
+    const row = byGen[g].sort((a,b)=>a.name.localeCompare(b.name));
+    const w = row.length*(NODE_W+GAP_X)-GAP_X;
+    if(w>maxRowWidth) maxRowWidth=w;
+  });
+  const svgW = Math.max(maxRowWidth+PAD*2, 600);
+  let svgH = PAD;
+  gens.forEach(g=>{
+    const row = byGen[g];
+    const w = row.length*(NODE_W+GAP_X)-GAP_X;
+    const startX = (svgW-w)/2;
+    row.forEach((m,i)=>{
+      positions[m.id] = { x: startX + i*(NODE_W+GAP_X), y: svgH, m };
+    });
+    svgH += NODE_H+GAP_Y;
+  });
+  let svg = `<svg width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" class="mx-auto block">`;
+  Object.values(positions).forEach(p=>{
+    const m = p.m;
+    [m.fatherId, m.motherId].forEach(pid=>{
+      if(pid && positions[pid]){
+        const pp = positions[pid];
+        const x1 = pp.x+NODE_W/2, y1 = pp.y+NODE_H;
+        const x2 = p.x+NODE_W/2, y2 = p.y;
+        const my = (y1+y2)/2;
+        const highlight = q && (m.name.toLowerCase().includes(q) || STATE.members.find(x=>x.id===pid)?.name.toLowerCase().includes(q));
+        svg += `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" fill="none" stroke="${highlight?'#059669':'#94a3b8'}" stroke-width="${highlight?2.5:1.5}" />`;
+      }
+    });
+    if(m.spouseId && positions[m.spouseId] && m.id < m.spouseId){
+      const sp = positions[m.spouseId];
+      const y = p.y+NODE_H/2;
+      svg += `<line x1="${p.x+NODE_W}" y1="${y}" x2="${sp.x}" y2="${y}" stroke="#ec4899" stroke-width="2" stroke-dasharray="4,3"/>`;
+      svg += `<text x="${(p.x+NODE_W+sp.x)/2}" y="${y-4}" text-anchor="middle" font-size="12" fill="#ec4899">❤</text>`;
+    }
+  });
+  Object.values(positions).forEach(p=>{
+    const m = p.m;
+    const match = q && m.name.toLowerCase().includes(q);
+    const fill = m.gender==='M'?'#dbeafe':'#fce7f3';
+    const stroke = match?'#059669':(m.gender==='M'?'#3b82f6':'#ec4899');
+    svg += `<g class="tree-node" onclick="showDetail('${m.id}')" transform="translate(${p.x},${p.y})">
+      <rect width="${NODE_W}" height="${NODE_H}" rx="10" fill="${fill}" stroke="${stroke}" stroke-width="${match?3:1.5}"/>
+      <text x="${NODE_W/2}" y="22" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2937">${escapeHtml(truncate(m.name,18))}</text>
+      <text x="${NODE_W/2}" y="40" text-anchor="middle" font-size="10" fill="#6b7280">${m.birth||'?'}${m.death?' †':''}</text>
+      <text x="${NODE_W/2}" y="56" text-anchor="middle" font-size="10" fill="#6b7280">Gen ${m.generation}</text>
+    </g>`;
+  });
+  svg += `</svg>`;
+  container.innerHTML = `<div class="text-xs text-gray-500 mb-2">💡 Klik node untuk detail. Garis biru = orang tua–anak, garis merah putus-putus = pasangan.</div>` + svg;
+}
+function truncate(s,n){ return s.length>n?s.slice(0,n)+'…':s; }
+
+/* =========================================================
+   MISC
+========================================================= */
+document.getElementById('searchBox').addEventListener('input', render);
+document.getElementById('mPhoto').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => { const p=document.getElementById('mPhotoPreview'); p.src=ev.target.result; p.classList.remove('hidden'); };
+  r.readAsDataURL(f);
+});
+['memberModal','detailModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', e=>{
+    if(e.target.id===id) document.getElementById(id).classList.add('hidden');
+  });
+});
+
+// Deteksi apakah bisa di-install sebagai PWA
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installHint').classList.remove('hidden');
+});
+if(window.matchMedia('(display-mode: standalone)').matches){
+  document.getElementById('installHint').classList.add('hidden');
+} else {
+  setTimeout(()=>{
+    if(!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches){
+      document.getElementById('installHint').classList.remove('hidden');
+    }
+  }, 2000);
+}
+</script>
+</body>
+</html>
